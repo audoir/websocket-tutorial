@@ -18,6 +18,11 @@ app.prepare().then(() => {
   io.on("connection", (socket) => {
     console.log("A client connected");
 
+    socket.on("chat message", (msg) => {
+      console.log("Message received:", msg);
+      io.emit("chat message", msg); // Broadcast the message to all connected clients
+    });
+
     socket.on("disconnect", () => {
       console.log("A client disconnected");
     });
