@@ -5,24 +5,18 @@ import { Message } from "../types/message";
 import { v4 as uuidv4 } from "uuid";
 
 export default function Home() {
-  const { isConnected, messages: socketMessages, sendMessage } = useSocket();
+  const { isConnected, message: socketMessage, sendMessage } = useSocket();
   const [inputMessage, setInputMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Process socket messages and ensure they're marked as received (not sent by current user)
-    setMessages((prevMessages) => {
-      // Filter out any duplicates based on the id
-      const uniqueNewMessages = socketMessages
-        .filter(
-          (newMsg) => !prevMessages.some((prevMsg) => prevMsg.id === newMsg.id)
-        )
-        .map((msg) => ({ ...msg, isSent: false })); // Messages from socket are always received, not sent
-
-      return [...prevMessages, ...uniqueNewMessages];
-    });
-  }, [socketMessages]);
+    if (socketMessage && !messages.some((msg) => msg.id === socketMessage.id)) {
+      setMessages((prevMessages) => {
+        return [...prevMessages, { ...socketMessage, isSent: false }];
+      });
+    }
+  }, [socketMessage]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

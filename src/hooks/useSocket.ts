@@ -5,7 +5,7 @@ import { Message } from "../types/message";
 export const useSocket = () => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [message, setMessage] = useState<Message | null>(null);
 
   useEffect(() => {
     const socketIo = io();
@@ -19,7 +19,7 @@ export const useSocket = () => {
     });
 
     socketIo.on("chat message", (msg: Message) => {
-      setMessages((prevMessages) => [...prevMessages, msg]);
+      setMessage(msg);
     });
 
     setSocket(socketIo);
@@ -35,5 +35,5 @@ export const useSocket = () => {
     }
   };
 
-  return { isConnected, messages, sendMessage };
+  return { isConnected, message, sendMessage };
 };
