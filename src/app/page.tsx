@@ -1,16 +1,44 @@
 "use client";
-
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSocket } from "../hooks/useSocket";
+import { Message } from "../types/message";
+import { v4 as uuidv4 } from "uuid";
 
 export default function Home() {
-  const { isConnected, messages, sendMessage } = useSocket();
+  const { isConnected, messages: socketMessages, sendMessage } = useSocket();
   const [inputMessage, setInputMessage] = useState("");
+  const [messages, setMessages] = useState<Message[]>([]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Process socket messages and ensure they're marked as received (not sent by current user)
+    setMessages((prevMessages) => {
+      // Filter out any duplicates based on the id
+      const uniqueNewMessages = socketMessages
+        .filter(
+          (newMsg) => !prevMessages.some((prevMsg) => prevMsg.id === newMsg.id)
+        )
+        .map((msg) => ({ ...msg, isSent: false })); // Messages from socket are always received, not sent
+
+      return [...prevMessages, ...uniqueNewMessages];
+    });
+  }, [socketMessages]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (inputMessage.trim()) {
-      sendMessage(inputMessage);
+      const newMessage = {
+        id: uuidv4(),
+        text: inputMessage,
+        timestamp: new Date(),
+        isSent: true,
+      };
+      sendMessage(newMessage);
+      setMessages((prev) => [...prev, newMessage]);
       setInputMessage("");
     }
   };
@@ -19,7 +47,7 @@ export default function Home() {
     <main className="flex min-h-screen flex-col items-center justify-center p-24 bg-gray-100">
       <div className="w-full max-w-md bg-white rounded-lg shadow-md p-6">
         <h1 className="text-2xl font-bold mb-4 text-center text-black">
-          WebSocket Chat Demo
+          WebSocket Broadcast Demo
         </h1>
         <div
           className={`mb-4 text-center ${
@@ -29,11 +57,26 @@ export default function Home() {
           {isConnected ? "Connected" : "Disconnected"}
         </div>
         <div className="mb-4 h-64 overflow-y-auto border border-gray-300 rounded p-2">
-          {messages.map((msg, index) => (
-            <p key={index} className="mb-2 text-black">
-              {msg}
-            </p>
+          {messages.map((msg) => (
+            <div
+              key={msg.id}
+              className={`mb-2 ${msg.isSent ? "text-right" : "text-left"}`}
+            >
+              <span
+                className={`inline-block p-2 rounded-lg ${
+                  msg.isSent
+                    ? "bg-blue-500 text-white"
+                    : "bg-gray-200 text-gray-800"
+                }`}
+              >
+                {msg.text}
+              </span>
+              <div className="text-xs text-gray-500 mt-1">
+                {new Date(msg.timestamp).toLocaleTimeString()}
+              </div>
+            </div>
           ))}
+          <div ref={messagesEndRef} />
         </div>
         <form onSubmit={handleSubmit} className="flex">
           <input

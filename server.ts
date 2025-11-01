@@ -2,6 +2,7 @@ import { createServer } from "http";
 import { parse } from "url";
 import next from "next";
 import { Server } from "socket.io";
+import { Message } from "./src/types/message";
 
 const dev = process.env.NODE_ENV !== "production";
 const app = next({ dev });
@@ -18,7 +19,7 @@ app.prepare().then(() => {
   io.on("connection", (socket) => {
     console.log("A client connected");
 
-    socket.on("chat message", (msg) => {
+    socket.on("chat message", (msg: Message) => {
       console.log("Message received:", msg);
       io.emit("chat message", msg); // Broadcast the message to all connected clients
     });
